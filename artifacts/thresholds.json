@@ -1,0 +1,21 @@
+{
+  "meta": {
+    "method": "conformal",
+    "alpha": 0.9,
+    "bucket_by": "none"
+  },
+  "targets": {
+    "CF_Solar": {
+      "default": 0.14693698093319252
+    },
+    "CF_Wind": {
+      "default": 0.5874165075348274
+    },
+    "Load_MW": {
+      "default": 13181.272265625
+    },
+    "Price": {
+      "default": 189.2726996612549
+    }
+  }
+}
