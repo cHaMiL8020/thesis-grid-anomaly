@@ -1,0 +1,13 @@
+data_path: data
+engineered_csv: data/AT_engineered_hourly.csv
+engineered_full_csv: data/AT_engineered_hourly_FULL.csv
+npz_path: artifacts/preprocessed_datasets_dcen_elm_h1.npz
+holidays_csv: data/AT_public_holidays_2017_2022.csv
+split:
+  train_start: "2017-01-01"
+  train_end:   "2020-12-31 23:00"
+  val_start:   "2021-01-01"
+  val_end:     "2021-12-31 23:00"
+  test_start:  "2022-01-01"
+  test_end:    "2022-12-31 23:00"
+horizon: 1

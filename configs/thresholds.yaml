@@ -1,0 +1,3 @@
+method: conformal   # or rolling_mad
+alpha: 0.90
+bucket_by: none     # options: none | hour | season | holiday

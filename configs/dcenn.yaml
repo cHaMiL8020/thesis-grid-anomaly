@@ -1,0 +1,8 @@
+enc_dim: 48
+steps: 2
+block: 8
+ae_epochs: 3
+lr: 0.001
+weight_decay: 1e-4
+subsample_train: 20000
+seed: 42

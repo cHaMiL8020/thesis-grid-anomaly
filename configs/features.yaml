@@ -1,0 +1,11 @@
+lags: [1,2,3,6,12,24,48,72]
+rolls: [3,6,12,24,48]
+winsorize_cols:
+  - Actual_Load_MW
+  - Solar_MW
+  - Wind_MW
+  - Price_EUR_MWh
+  - precipitation (mm)
+  - shortwave_radiation (W/m²)
+  - wind_power_proxy
+  - pv_proxy

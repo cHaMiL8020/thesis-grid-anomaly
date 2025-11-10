@@ -1,0 +1,10 @@
+﻿.venv/
+__pycache__/
+*.pyc
+artifacts/
+reports/figures/
+reports/tables/
+notebooks/.ipynb_checkpoints/
+# OS/editor junk
+.DS_Store
+Thumbs.db
