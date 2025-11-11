@@ -30,4 +30,86 @@ then detect anomalies through conformal threshold calibration and map their fina
 ---
 
 ## 📂 Project Structure
+thesis-grid-anomaly/
+│
+├── configs/ # YAML configs for paths, features, thresholds, dCeNN params
+├── data/ # Engineered and raw datasets (hourly 2017–2022)
+├── artifacts/ # Saved encoder, ELM heads, thresholds, scalers
+├── reports/
+│ ├── figures/ # Plots: anomalies, residuals, finance utility
+│ └── tables/ # CSVs: metrics, anomalies, finance backtest
+├── src/ # All Python modules
+│ ├── 00_make_holidays.py
+│ ├── 01_preprocess_build_features.py
+│ ├── 02_split_and_scale.py
+│ ├── 03_train_dcenn_elm.py
+│ ├── 04_calibrate_thresholds.py
+│ ├── 05_detect_anomalies.py
+│ ├── 06_finance_mapping.py
+│ ├── 08_eval_metrics.py
+│ └── 09_edge_export.py
+├── Makefile # One-command pipeline automation
+└── requirements.txt
+
+
+
+---
+
+## 🧠 Data Sources
+
+| Domain | Source | Resolution | Key Fields |
+|---------|---------|-------------|-------------|
+| **Load & Price** | ENTSO-E Transparency Platform | Hourly | Total Load (MW), Day-Ahead Price (€/MWh) |
+| **Weather** | Open-Meteo Historical API | 0.1° – 0.25° grid | Temperature, Wind Speed, Radiation, Pressure, Humidity, Precipitation |
+| **Installed Capacity** | ENTSO-E (Annual → Hourly interpolation) | Hourly (derived) | Wind & Solar Capacity (MW) |
+| **Calendar** | Austrian public holidays (2017-2022) | Daily | Holiday/Weekend/Season encodings |
+
+Train = 2017–2020 Validation = 2021 Test = 2022
+
+---
+
+## 🚀 Quick Start (Ubuntu / Codespaces)
+
+```bash
+# 1️⃣ Create & activate virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# 2️⃣ Install system deps & Python packages
+sudo apt-get update
+sudo apt-get install -y make
+pip install --upgrade pip wheel setuptools
+pip install -r requirements.txt
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+# 3️⃣ Run the full pipeline
+make holidays     # generate AT_public_holidays_2017_2022.csv
+make preprocess   # build engineered hourly dataset
+make split        # split & scale train/val/test sets
+make train        # train dCeNN–ELM model
+make thresholds   # calibrate anomaly thresholds
+make detect       # detect anomalies (2022)
+make finance      # finance utility mapping
+make eval         # compute metrics
+make edge         # export edge model bundle
+
+
+Detected anomalies (2022):
+
+Price spikes in late 2021–22 crisis period
+
+Load surges during winter and holidays
+
+Renewable generation ramps during wind/solar transitions
+
+Finance mapping output:
+utility_vs_time_2022.png shows cumulative utility vs baseline.
+(Current version shows net loss → policy sign inversion planned.)
+
+
+Chamil Oshan Abeysekara
+MSc Autonomous Systems & Robotics — University of Klagenfurt
+📧 [chamilab@edu.aau.at]
+🌐 github.com/cHaMiL8020
+
 
