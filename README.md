@@ -29,31 +29,6 @@ then detect anomalies through conformal threshold calibration and map their fina
 
 ---
 
-## 📂 Project Structure
-thesis-grid-anomaly/
-│
-├── configs/ # YAML configs for paths, features, thresholds, dCeNN params
-├── data/ # Engineered and raw datasets (hourly 2017–2022)
-├── artifacts/ # Saved encoder, ELM heads, thresholds, scalers
-├── reports/
-│ ├── figures/ # Plots: anomalies, residuals, finance utility
-│ └── tables/ # CSVs: metrics, anomalies, finance backtest
-├── src/ # All Python modules
-│ ├── 00_make_holidays.py
-│ ├── 01_preprocess_build_features.py
-│ ├── 02_split_and_scale.py
-│ ├── 03_train_dcenn_elm.py
-│ ├── 04_calibrate_thresholds.py
-│ ├── 05_detect_anomalies.py
-│ ├── 06_finance_mapping.py
-│ ├── 08_eval_metrics.py
-│ └── 09_edge_export.py
-├── Makefile # One-command pipeline automation
-└── requirements.txt
-
-
-
----
 
 ## 🧠 Data Sources
 
