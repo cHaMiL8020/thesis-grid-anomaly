@@ -5,4 +5,7 @@ matplotlib>=3.7
 holidays>=0.53
 pyyaml>=6.0
 tqdm>=4.66
+clingo>=5.8.0
+cffi>=2.0.0
+
 # Optional: PyTorch CPU only (install separately as below)

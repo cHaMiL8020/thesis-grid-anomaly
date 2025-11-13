@@ -1,5 +1,5 @@
 .RECIPEPREFIX := >
-.PHONY: all holidays preprocess split train thresholds detect finance eval edge clean
+.PHONY: all holidays preprocess split train thresholds detect finance asp eval eval_refined edge clean
 
 PY=python
 SRC=src
@@ -7,8 +7,14 @@ ART=artifacts
 DATA=data
 REP=reports
 
-all: holidays preprocess split train thresholds detect finance eval
+# -------------------------------
+#  Full pipeline (Phase 1 + Phase 2)
+# -------------------------------
+all: holidays preprocess split train thresholds detect finance asp eval edge
 
+# -------------------------------
+#  Phase 1: Learning pipeline
+# -------------------------------
 holidays:
 > $(PY) $(SRC)/00_make_holidays.py
 
@@ -30,11 +36,30 @@ detect:
 finance:
 > $(PY) $(SRC)/06_finance_mapping.py
 
+# -------------------------------
+#  Phase 2: Reasoning (ASP)
+# -------------------------------
+asp:
+> $(PY) $(SRC)/07_apply_asp.py
+
+# -------------------------------
+#  Evaluation
+# -------------------------------
 eval:
 > $(PY) $(SRC)/08_eval_metrics.py
 
+# optional: extended evaluation on refined anomalies
+eval_refined:
+> $(PY) $(SRC)/08_eval_metrics.py --refined
+
+# -------------------------------
+#  Edge export for Raspberry Pi / Jetson
+# -------------------------------
 edge:
 > $(PY) $(SRC)/09_edge_export.py
 
+# -------------------------------
+#  Cleanup
+# -------------------------------
 clean:
 > rm -rf $(ART)/* $(REP)/figures/* $(REP)/tables/*
