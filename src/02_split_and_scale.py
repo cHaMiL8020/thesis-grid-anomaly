@@ -1,60 +1,128 @@
-import numpy as np, pandas as pd, yaml, os
+# src/02_split_and_scale.py
+
+import os
+import yaml
+import numpy as np
+import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-cfg = yaml.safe_load(open("configs/base.yaml"))
-f_cfg = yaml.safe_load(open("configs/features.yaml"))
+# --------------------------------------------------------
+# Load configs
+# --------------------------------------------------------
+with open("configs/base.yaml") as f:
+    base = yaml.safe_load(f)
 
-df = pd.read_csv(cfg["engineered_csv"], parse_dates=["Time (UTC)"]).set_index("Time (UTC)").sort_index()
+with open("configs/features.yaml") as f:
+    f_cfg = yaml.safe_load(f)
 
+ENGINEERED = base["engineered_csv"]
+NPZ_PATH   = base["npz_path"]
+SPLIT      = base["split"]
+HORIZON    = int(base.get("horizon", 1))  # currently unused (same-hour targets)
+
+LAGS  = f_cfg["lags"]
+ROLLS = f_cfg["rolls"]
+WINS  = f_cfg["winsorize_cols"]
+
+# --------------------------------------------------------
+# Feature list (authoritative for pipeline)
+# --------------------------------------------------------
 FEATS_BASE = [
-  "Actual_Load_MW","Solar_MW","Wind_MW","Price_EUR_MWh",
-  "temperature_2m (°C)","relative_humidity_2m (%)","wind_speed_10m (m/s)",
-  "surface_pressure (hPa)","precipitation (mm)","shortwave_radiation (W/m²)",
-  "air_density_kgm3","wind_speed_100m (m/s)","wind_power_proxy","pv_proxy",
-  "hour_sin","hour_cos","dow_sin","dow_cos","month_sin","month_cos",
-  "is_public_holiday","is_weekend","is_special_day"
+    "Actual_Load_MW", "Solar_MW", "Wind_MW", "Price_EUR_MWh",
+    "temperature_2m (°C)", "relative_humidity_2m (%)",
+    "wind_speed_10m (m/s)", "surface_pressure (hPa)",
+    "shortwave_radiation (W/m²)",
+    "air_density_kgm3", "wind_speed_100m (m/s)",
+    "wind_power_proxy", "pv_proxy",
+    "hour_sin", "hour_cos", "dow_sin", "dow_cos",
+    "month_sin", "month_cos",
+    "is_public_holiday", "is_weekend", "is_special_day",
 ]
 
-# Winsorize
-for c in f_cfg["winsorize_cols"]:
-    a,b = df[c].quantile([0.01,0.99]); df[c] = df[c].clip(a,b)
+# --------------------------------------------------------
+# Helpers
+# --------------------------------------------------------
+def winsorize_inplace(df, cols, lo=0.01, hi=0.99):
+    for c in cols:
+        lo_q, hi_q = df[c].quantile([lo, hi])
+        df[c] = df[c].clip(lo_q, hi_q)
 
-def make_supervised(df, horizon=1, lags=(1,2,3,6,12,24,48,72), rolls=(3,6,12,24,48)):
+def make_supervised(df, lags, rolls):
+    """
+    Build supervised dataset:
+      - X: engineered + lags + rolling means
+      - Y: same-hour targets (NO future shift)
+    """
     X = df[FEATS_BASE].copy()
-    core = ["Actual_Load_MW","Solar_MW","Wind_MW","Price_EUR_MWh",
-            "temperature_2m (°C)","wind_speed_10m (m/s)","shortwave_radiation (W/m²)"]
+
+    core = [
+        "Actual_Load_MW", "Solar_MW", "Wind_MW", "Price_EUR_MWh",
+        "temperature_2m (°C)", "wind_speed_10m (m/s)",
+        "shortwave_radiation (W/m²)",
+    ]
+
     for c in core:
-        for L in lags:  X[f"{c}_lag{L}"] = df[c].shift(L)
-        for R in rolls: X[f"{c}_rmean{R}"] = df[c].rolling(R, min_periods=max(2,int(0.6*R))).mean()
+        for L in lags:
+            X[f"{c}_lag{L}"] = df[c].shift(L)
+        for R in rolls:
+            X[f"{c}_rmean{R}"] = df[c].rolling(
+                R, min_periods=int(0.7 * R)
+            ).mean()
+
+    # Same-hour targets (no shift)
     Y = pd.DataFrame({
-        "CF_Solar": df["CF_Solar"].shift(-horizon),
-        "CF_Wind":  df["CF_Wind"].shift(-horizon),
-        "Load_MW":  df["Actual_Load_MW"].shift(-horizon),
-        "Price":    df["Price_EUR_MWh"].shift(-horizon),
+        "CF_Solar": df["CF_Solar"],
+        "CF_Wind":  df["CF_Wind"],
+        "Load_MW":  df["Actual_Load_MW"],
+        "Price":    df["Price_EUR_MWh"],
     }, index=df.index)
+
     XY = X.join(Y).dropna()
-    return XY.iloc[:, :X.shape[1]], XY.iloc[:, X.shape[1]:]
+    return XY.index, XY[X.columns], Y.loc[XY.index]
 
-def sub(df,s,e): return df.loc[s:e]
+# --------------------------------------------------------
+# Load engineered data
+# --------------------------------------------------------
+df = (
+    pd.read_csv(ENGINEERED, parse_dates=["Time (UTC)"])
+      .set_index("Time (UTC)")
+      .sort_index()
+)
 
-train = sub(df, cfg["split"]["train_start"], cfg["split"]["train_end"])
-val   = sub(df, cfg["split"]["val_start"],   cfg["split"]["val_end"])
-test  = sub(df, cfg["split"]["test_start"],  cfg["split"]["test_end"])
+winsorize_inplace(df, WINS)
 
-Xtr,Ytr = make_supervised(train, cfg["horizon"], f_cfg["lags"], f_cfg["rolls"])
-Xva,Yva = make_supervised(val,   cfg["horizon"], f_cfg["lags"], f_cfg["rolls"])
-Xte,Yte = make_supervised(test,  cfg["horizon"], f_cfg["lags"], f_cfg["rolls"])
+# Train/val/test splits
+tr = df.loc[SPLIT["train_start"]:SPLIT["train_end"]]
+va = df.loc[SPLIT["val_start"]:  SPLIT["val_end"]]
+te = df.loc[SPLIT["test_start"]: SPLIT["test_end"]]
 
+t_tr, Xtr, Ytr = make_supervised(tr, LAGS, ROLLS)
+t_va, Xva, Yva = make_supervised(va, LAGS, ROLLS)
+t_te, Xte, Yte = make_supervised(te, LAGS, ROLLS)
+
+# --------------------------------------------------------
+# Scale features (train only) and save scaler
+# --------------------------------------------------------
 scaler = StandardScaler().fit(Xtr.values)
-Xtr_s, Xva_s, Xte_s = scaler.transform(Xtr.values), scaler.transform(Xva.values), scaler.transform(Xte.values)
+
+Xtr_s = scaler.transform(Xtr.values)
+Xva_s = scaler.transform(Xva.values)
+Xte_s = scaler.transform(Xte.values)
 
 os.makedirs("artifacts", exist_ok=True)
+np.savez("artifacts/scaler.npz", scaler=scaler)
+
+# --------------------------------------------------------
+# Save datasets for training (Step 03 and onwards)
+# --------------------------------------------------------
 np.savez_compressed(
-    cfg["npz_path"],
-    X_train=Xtr_s, Y_train=Ytr.values.astype(np.float32),
-    X_val=Xva_s,   Y_val=Yva.values.astype(np.float32),
-    X_test=Xte_s,  Y_test=Yte.values.astype(np.float32),
-    feature_names=np.array(Xtr.columns.tolist()),
-    target_names=np.array(Ytr.columns.tolist()),
+    NPZ_PATH,
+    X_train=Xtr_s, Y_train=Ytr.values,
+    X_val=Xva_s,   Y_val=Yva.values,
+    X_test=Xte_s,  Y_test=Yte.values,
+    feature_names=np.array(Xtr.columns),
+    target_names=np.array(Ytr.columns),
 )
-print(f"Saved {cfg['npz_path']}")
+
+print(f"Saved: {NPZ_PATH}")
+print("Saved: artifacts/scaler.npz")
