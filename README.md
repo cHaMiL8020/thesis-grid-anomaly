@@ -16,7 +16,7 @@ The pipeline is **100% reproducible** using the Makefile and runs seamlessly in 
 
 ---
 
-# 1. 📁 Project Structure
+# 1. Project Structure
 ```
 thesis-grid-anomaly/
 │
