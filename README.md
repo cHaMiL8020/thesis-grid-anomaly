@@ -76,11 +76,11 @@ Traditional anomaly detection fails when data is **non-stationary, multivariate,
 
 This thesis proposes a **hybrid ML + Logic Reasoning approach** that:
 
-🧠 Learns patterns → **dCeNN–ELM**  
-📏 Detects anomalies → **Conformal thresholds**  
-⚖ Filters them → **ASP rules**  
-💶 Maps anomaly behaviour to financial action → **Utility model**  
-📦 Deploys on hardware → **Edge bundle**
+ Learns patterns → **dCeNN–ELM**  
+ Detects anomalies → **Conformal thresholds**  
+ Filters them → **ASP rules**  
+ Maps anomaly behaviour to financial action → **Utility model**  
+ Deploys on hardware → **Edge bundle**
 
 ---
 
