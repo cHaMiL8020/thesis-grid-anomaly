@@ -1,7 +1,7 @@
 # Finance-Aware, Weather-Informed Anomaly Detection for Electricity Markets & Grid Operations  
 ### Combining Learning (dCeNN–ELM) and Reasoning (ASP) for Multivariate Time Series Under Uncertainty
 
-This repository contains the full implementation for my master’s thesis:
+This repository contains the current implementation for my master’s thesis:
 
 > **Finance-Aware, Weather-Informed Anomaly Detection for Electricity Markets & Grid Operations: Combining Learning and Reasoning for Multivariate Time Series Under Uncertainty Using an Efficient dCeNN–ELM–ASP Approach**
 
