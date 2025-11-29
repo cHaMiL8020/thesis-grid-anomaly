@@ -1,5 +1,5 @@
 .RECIPEPREFIX := >
-.PHONY: all holidays preprocess split train thresholds detect finance asp eval eval_refined edge clean
+.PHONY: all holidays preprocess split train thresholds detect finance asp eval eval_refined edge event_table clean
 
 PY=python
 SRC=src
@@ -57,7 +57,24 @@ eval_refined:
 # -------------------------------
 edge:
 > $(PY) $(SRC)/09_edge_export.py
-
+# -------------------------------
+#  All in one: Build event table
+# -------------------------------
+event_table:
+> $(PY) $(SRC)/10_build_event_table.py
+# -------------------------------
+#  All in one: plot event table -- signal Price
+# -------------------------------
+plot_event_table:
+> $(PY) $(SRC)/11_plot_master_timeline.py
+# -------------------------------
+#  All in one: plot event table -- signal Price
+# -------------------------------
+plot_event_table_all:
+>$(PY) $(SRC)/11_plot_master_timeline.py --signal Price
+>$(PY) $(SRC)/11_plot_master_timeline.py --signal Load_MW
+>$(PY) $(SRC)/11_plot_master_timeline.py --signal CF_Solar
+>$(PY) $(SRC)/11_plot_master_timeline.py --signal CF_Wind
 # -------------------------------
 #  Cleanup
 # -------------------------------
