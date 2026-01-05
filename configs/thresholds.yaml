@@ -1,3 +1,4 @@
-method: conformal   # or rolling_mad
+# configs/thresholds.yaml
+method: conformal
 alpha: 0.90
-bucket_by: none     # options: none | hour | season | holiday
+bucket_by: hour  # UPDATED from 'none'
