@@ -83,16 +83,6 @@ thesis-grid-anomaly/
 
 ---
 
-Key steps:
-```bash
-make all
-make train
-make asp
-make finance
-make plot_event_table_all
-```
-
----
 
 ## Edge Deployment
 - Pure NumPy inference
@@ -109,6 +99,25 @@ make plot_event_table_all
 | ELM | Fast regression | Linear |
 | ASP | Rule enforcement | Symbolic |
 | Finance Mapping | Market utility | Economic |
+
+---
+
+Reproducing the Results
+
+Run the full pipeline:
+```bash
+make all
+```
+---
+
+Key steps:
+```bash
+make all
+make train
+make asp
+make finance
+make plot_event_table_all
+```
 
 ---
 
