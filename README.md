@@ -83,7 +83,7 @@ thesis-grid-anomaly/
 
 ---
 
-## Reproducing the Results
+Reproducing the Results
 
 Run the full pipeline:
 ```bash
