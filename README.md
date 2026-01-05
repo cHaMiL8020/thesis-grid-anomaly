@@ -23,39 +23,26 @@ This work addresses that gap by integrating:
 ## System Architecture
 
 ### Phase 1 – Neural Learning (The “Brain”)
-- **dCeNN (Discrete Cellular Neural Network)** encoder  
-  - Captures spatio-temporal dependencies with local connectivity  
-  - Lightweight and parameter-efficient  
-- **ELM (Extreme Learning Machine)** regression heads  
-  - Closed-form ridge regression  
-  - Ultra-fast training and inference  
-
-Forecasted variables include electricity price, system load, and renewable generation.
-
----
+- **dCeNN (Discrete Cellular Neural Network)** encoder (PyTorch, training-time only)
+- **ELM (Extreme Learning Machine)** regression heads using closed-form ridge regression
+- Optimized for fast training and lightweight inference
 
 ### Phase 2 – Symbolic Reasoning (The “Filter”)
 - **Answer Set Programming (ASP)** using **Clingo**
-- Injects domain knowledge to remove false positives
-
-Example rules:
-- Solar anomalies vetoed when radiation = 0 (night-time)
-- Wind ramps exceeding physical limits filtered
-- Price spikes confirmed only with co-occurring load or generation shifts
-
----
+- Enforces physical plausibility and market logic
+- Filters statistically valid but logically impossible anomalies
 
 ### Phase 3 – Financial Utility Mapping
-- Refined anomaly signals are evaluated in a market backtest
-- Converts detections into **profit/loss utility**
-- Demonstrates reduced cost of false alarms
+- Refined anomaly signals evaluated via backtesting
+- Outputs actionable profit/loss utilities for market decisions
 
 ---
 
 ## Data Sources (Austria, 2017–2022)
-- ENTSO-E electricity prices, load, wind and solar generation
-- Open-Meteo weather data
-- Physics-informed engineered proxies
+
+- **ENTSO-E**: Day-ahead prices, system load, wind & solar generation
+- **Open-Meteo**: Radiation, wind speed (100m), air density
+- **Engineered proxies**: Physics-informed PV and wind power features
 
 ---
 
@@ -79,45 +66,75 @@ thesis-grid-anomaly/
 ├─ reports/        # CSV outputs & plots
 ├─ edge/           # Edge-ready inference bundle
 ├─ Makefile        # End-to-end orchestration
-└─ README.md 
+└─ README.md
+```
 
 ---
 
+## Requirements
 
-## Edge Deployment
-- Pure NumPy inference
-- 72-hour ring buffer for temporal features
-- Optimized for Raspberry Pi / NVIDIA Jetson
+### Python Version
+- **Python 3.8+** (recommended: 3.10)
+
+### Core Python Dependencies
+```text
+numpy>=1.24
+pandas>=2.0
+scikit-learn>=1.3
+matplotlib>=3.7
+holidays>=0.53
+pyyaml>=6.0
+tqdm>=4.66
+clingo>=5.8.0
+cffi>=2.0.0
+```
+
+### Library Usage Overview
+
+- **Python**: Primary language for data engineering, modeling, and orchestration
+- **PyTorch**: Used *only during training* for the dCeNN encoder (edge inference is NumPy-only)
+- **Clingo (Potassco)**: ASP solver for symbolic reasoning (`pip install clingo`)
+- **Scikit-Learn**: Data normalization (StandardScaler)
+- **NumPy & Pandas**: Matrix operations and time-series handling
+- **Holidays**: Generates Austrian public holiday facts (`00_make_holidays.py`)
 
 ---
 
-## Method Summary
-
-| Component | Role | Logic |
-|--------|------|------|
-| dCeNN | Feature extraction | Neural |
-| ELM | Fast regression | Linear |
-| ASP | Rule enforcement | Symbolic |
-| Finance Mapping | Market utility | Economic |
-
----
-
-Reproducing the Results
+## Reproducing the Results
 
 Run the full pipeline:
 ```bash
 make all
 ```
----
 
 Key steps:
 ```bash
-make all
 make train
 make asp
 make finance
 make plot_event_table_all
 ```
+
+---
+
+## Edge Deployment
+
+- Exported as `model_bundle.npz`
+- 72-hour ring buffer for temporal features
+- Zero ML dependencies at inference (NumPy-only)
+- Optimized for Raspberry Pi & NVIDIA Jetson
+
+---
+
+## Method Summary
+
+| Component | Role | Logic Type |
+|--------|------|-----------|
+| dCeNN | Feature extraction | Neural |
+| ELM | Fast regression | Linear |
+| Conformal Prediction | Thresholding | Statistical |
+| ASP (Clingo) | Rule enforcement | Symbolic |
+| Finance Mapping | Market utility | Economic |
 
 ---
 
