@@ -61,16 +61,25 @@ Example rules:
 
 ## Project Structure
 
+```text
 thesis-grid-anomaly/
-├─ configs/        # YAML configurations  
-├─ data/           # Raw and engineered datasets  
-├─ src/            # Modular pipeline (00–11)  
-├─ rules/          # ASP logic (Clingo)  
-├─ artifacts/      # Trained models and scalers  
-├─ reports/        # CSV outputs and figures  
-├─ edge/           # Edge deployment bundle  
-├─ Makefile        # Pipeline orchestration  
-└─ README.md  
+│
+├─ configs/        # YAML configs (features, thresholds, models)
+├─ data/           # Raw & engineered datasets
+├─ src/            # Modular pipeline (00–11)
+│  ├─ 00–02  Data engineering & preprocessing
+│  ├─ 03–05  Neural training & statistical detection
+│  ├─ 06     Finance-aware utility mapping
+│  ├─ 07     ASP symbolic reasoning
+│  ├─ 08–09  Metrics & edge export
+│  └─ 10–11  Event clustering & master visualizations
+│
+├─ rules/          # ASP rules (Clingo)
+├─ artifacts/      # Trained models, scalers, thresholds
+├─ reports/        # CSV outputs & plots
+├─ edge/           # Edge-ready inference bundle
+├─ Makefile        # End-to-end orchestration
+└─ README.md 
 
 ---
 
