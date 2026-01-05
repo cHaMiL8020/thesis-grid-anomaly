@@ -83,15 +83,9 @@ thesis-grid-anomaly/
 
 ---
 
-Reproducing the Results
-
-Run the full pipeline:
-```bash
-make all
-```
-
 Key steps:
 ```bash
+make all
 make train
 make asp
 make finance
