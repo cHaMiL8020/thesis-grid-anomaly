@@ -2,12 +2,12 @@
 
 #!/usr/bin/env python3
 """
-Generate public holiday calendar for Austria (or another country) and
+Generate public holiday calendar for Austria and
 store it as a CSV, based on the global config.
 
 Default behaviour:
 - Reads configs/base.yaml
-- Uses years 2017–2022 (inclusive), unless overridden by config or CLI
+- Uses years 2017–2022, unless overridden by config or CLI
 - Writes a holidays CSV to cfg["holidays_csv"]
 - Ensures cfg["data_path"] exists
 
