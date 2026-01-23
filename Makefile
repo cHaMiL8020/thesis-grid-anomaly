@@ -13,7 +13,7 @@ REP=reports
 # CHANGE: Moved 'asp' before 'finance' to ensure reasoning refines anomalies 
 # before they are used for financial backtesting. 
 all: holidays preprocess split train thresholds detect asp finance eval edge
-
+plot: event_table plot_event_table_all
 # -------------------------------
 #  Phase 1: Learning pipeline
 # -------------------------------
@@ -79,6 +79,9 @@ plot_event_table_all:
 > $(PY) $(SRC)/11_plot_master_timeline.py --signal Load_MW 
 > $(PY) $(SRC)/11_plot_master_timeline.py --signal CF_Solar 
 > $(PY) $(SRC)/11_plot_master_timeline.py --signal CF_Wind 
+
+benchmark:
+> $(PY) $(SRC)/15_run_benchmarks.py
 
 # -------------------------------
 #  Cleanup
