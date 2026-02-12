@@ -1,158 +1,47 @@
-# Finance-Aware, Weather-Informed Anomaly Detection for Electricity Markets & Grid Operations
+# Thesis Grid Anomaly
 
-**Combining Learning (dCeNN–ELM) and Reasoning (ASP) for Multivariate Time-Series under Uncertainty**
+## Getting Started
+Welcome to the Thesis Grid Anomaly project. This documentation provides essential guidance for using and contributing to the project.
 
-This repository contains the full implementation of my **Master’s thesis** in *Autonomous Systems and Robotics* at the **University of Klagenfurt, Austria**.
+## Installation
+To install the necessary dependencies and set up the project, follow these steps:
 
-The project presents a **Neuro-Symbolic Anomaly Detection framework** for electricity markets and grid operations, combining efficient neural learning with rule-based symbolic reasoning to deliver **physically valid, economically meaningful anomaly signals**.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/cHaMiL8020/thesis-grid-anomaly.git
+   cd thesis-grid-anomaly
+   ```
+2. Install required libraries:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
----
-
-## Core Idea
-
-Traditional machine learning models often detect *statistical anomalies* that are **physically impossible or economically irrelevant**.
-
-This work addresses that gap by integrating:
-- **Learning (Neural Layer)** – detects statistical deviations  
-- **Reasoning (Symbolic Layer)** – enforces physics & market constraints  
-- **Finance Awareness** – evaluates real economic utility  
-- **Edge Readiness** – deployable on low-power hardware  
-
----
-
-## System Architecture
-
-### Phase 1 – Neural Learning (The “Brain”)
-- **dCeNN (Discrete Cellular Neural Network)** encoder (PyTorch, training-time only)
-- **ELM (Extreme Learning Machine)** regression heads using closed-form ridge regression
-- Optimized for fast training and lightweight inference
-
-### Phase 2 – Symbolic Reasoning (The “Filter”)
-- **Answer Set Programming (ASP)** using **Clingo**
-- Enforces physical plausibility and market logic
-- Filters statistically valid but logically impossible anomalies
-
-### Phase 3 – Financial Utility Mapping
-- Refined anomaly signals evaluated via backtesting
-- Outputs actionable profit/loss utilities for market decisions
-
----
-
-## Data Sources (Austria, 2017–2022)
-
-- **ENTSO-E**: Day-ahead prices, system load, wind & solar generation
-- **Open-Meteo**: Radiation, wind speed (100m), air density
-- **Engineered proxies**: Physics-informed PV and wind power features
-
----
-
-## Project Structure
-
-```text
-thesis-grid-anomaly/
-│
-├─ configs/        # YAML configs (features, thresholds, models)
-├─ data/           # Raw & engineered datasets
-├─ src/            # Modular pipeline (00–11)
-│  ├─ 00–02  Data engineering & preprocessing
-│  ├─ 03–05  Neural training & statistical detection
-│  ├─ 06     Finance-aware utility mapping
-│  ├─ 07     ASP symbolic reasoning
-│  ├─ 08–09  Metrics & edge export
-│  └─ 10–11  Event clustering & master visualizations
-│
-├─ rules/          # ASP rules (Clingo)
-├─ artifacts/      # Trained models, scalers, thresholds
-├─ reports/        # CSV outputs & plots
-├─ edge/           # Edge-ready inference bundle
-├─ Makefile        # End-to-end orchestration
-└─ README.md
-```
-
----
-
-## Requirements
-
-### Python Version
-- **Python 3.8+** (recommended: 3.10)
-
-### Core Python Dependencies
-```text
-numpy>=1.24
-pandas>=2.0
-scikit-learn>=1.3
-matplotlib>=3.7
-holidays>=0.53
-pyyaml>=6.0
-tqdm>=4.66
-clingo>=5.8.0
-cffi>=2.0.0
-```
-
-### Library Usage Overview
-
-- **Python**: Primary language for data engineering, modeling, and orchestration
-- **PyTorch**: Used *only during training* for the dCeNN encoder (edge inference is NumPy-only)
-- **Clingo (Potassco)**: ASP solver for symbolic reasoning (`pip install clingo`)
-- **Scikit-Learn**: Data normalization (StandardScaler)
-- **NumPy & Pandas**: Matrix operations and time-series handling
-- **Holidays**: Generates Austrian public holiday facts (`00_make_holidays.py`)
-
----
-
-## Reproducing the Results
-
-Run the full pipeline:
+## Quick Start Guide
+After installation, you can quickly get started by running:
 ```bash
-make all
+python main.py
 ```
 
-Key steps:
-```bash
-make train
-make asp
-make finance
-make plot_event_table_all
-```
+## Makefile Documentation
+This project includes a Makefile for easy management of standard tasks. Below are some common commands:
+- `make build` - Builds the project.
+- `make clean` - Cleans up temporary files.
 
----
+## Dataset Sources
+Provide details about where to find datasets you plan to use with the project. Link to specific datasets or repositories.
 
-## Edge Deployment
+## Contributing
+We welcome contributions from the community! If you'd like to contribute, please follow these steps:
+1. Fork the repository.
+2. Create a new branch for your feature.
+3. Make your changes and submit a pull request.
 
-- Exported as `model_bundle.npz`
-- 72-hour ring buffer for temporal features
-- Zero ML dependencies at inference (NumPy-only)
-- Optimized for Raspberry Pi & NVIDIA Jetson
+## License
+This project is licensed under the MIT License.
 
----
+## Contact Information
+For any questions, please contact me at [insert_email@example.com].
 
-## Method Summary
-
-| Component | Role | Logic Type |
-|--------|------|-----------|
-| dCeNN | Feature extraction | Neural |
-| ELM | Fast regression | Linear |
-| Conformal Prediction | Thresholding | Statistical |
-| ASP (Clingo) | Rule enforcement | Symbolic |
-| Finance Mapping | Market utility | Economic |
-
----
-
-## Author
-
-**Chamil Oshan Abeysekara**  
-Master’s Candidate – Autonomous Systems & Robotics  
-University of Klagenfurt, Austria
-
----
-
-## Citation
-
-```bibtex
-@thesis{abeysekara2025grid,
-  title  = {Finance-Aware, Weather-Informed Anomaly Detection for Electricity Markets},
-  author = {Abeysekara, Chamil Oshan},
-  year   = {2025},
-  school = {University of Klagenfurt}
-}
-```
+## Additional Guidance
+- Ensure all dependencies are installed.
+- Refer to the documentation for specific usage examples if you're unsure how to proceed.
