@@ -2,7 +2,7 @@
 
 **Combining Learning (dCeNN–ELM) and Reasoning (ASP) for Multivariate Time-Series under Uncertainty**
 
-This repository contains the full implementation of my **Master's thesis** in *Autonomous Systems and Robotics* at the **University of Klagenfurt, Austria**.
+This repository contains the full implementation of my **Master’s thesis** in *Autonomous Systems and Robotics* at the **University of Klagenfurt, Austria**.
 
 The project presents a **Neuro-Symbolic Anomaly Detection framework** for electricity markets and grid operations, combining efficient neural learning with rule-based symbolic reasoning to deliver **physically valid, economically meaningful anomaly signals**.
 
@@ -59,14 +59,15 @@ thesis-grid-anomaly/
 │  ├─ 06     Finance-aware utility mapping
 │  ├─ 07     ASP symbolic reasoning
 │  ├─ 08–09  Metrics & edge export
-│  └─ 10–11  Event clustering & master visualizations
+│  ├─ 10–11  Event clustering & master visualizations
+│  └─ 12-20  Benchmark Process
 │
 ├─ rules/          # ASP rules (Clingo)
 ├─ artifacts/      # Trained models, scalers, thresholds
 ├─ reports/        # CSV outputs & plots
 ├─ edge/           # Edge-ready inference bundle
 ├─ Makefile        # End-to-end orchestration
-└─ README.md
+└─ README.md 
 ```
 
 ---
@@ -97,65 +98,6 @@ cffi>=2.0.0
 - **Scikit-Learn**: Data normalization (StandardScaler)
 - **NumPy & Pandas**: Matrix operations and time-series handling
 - **Holidays**: Generates Austrian public holiday facts (`00_make_holidays.py`)
-
----
-
-## Installation & Setup
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/cHaMiL8020/thesis-grid-anomaly.git
-cd thesis-grid-anomaly
-```
-
-### 2. Create a Virtual Environment (Optional but Recommended)
-```bash
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-### 3. Install Python Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Install PyTorch (Required for Training)
-Choose the appropriate version for your system from [pytorch.org](https://pytorch.org/):
-
-**CPU-only (lightweight, sufficient for most users):**
-```bash
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-```
-
-**GPU (CUDA 11.8):**
-```bash
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-```
-
-**GPU (CUDA 12.1):**
-```bash
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-```
-
----
-
-## Data Download & Preparation
-
-The pipeline expects data from the following sources:
-
-### 1. ENTSO-E Data (Electricity Market & Grid)
-- **Day-ahead prices**: https://transparency.entsoe.eu/
-- **System load & generation**: Available via ENTSO-E Transparency API
-- Region: **Austria (AT)**
-- Time period: **2017-2022**
-
-### 2. Open-Meteo Weather Data
-- **URL**: https://open-meteo.com/
-- **Parameters**: Radiation, Wind Speed (100m), Air Density
-- Automatically fetched by `src/01_preprocess_build_features.py`
-
-### 3. Setup Instructions
-Place downloaded ENTSO-E CSV files in the `data/raw/` directory before running preprocessing.
 
 ---
 
@@ -287,15 +229,6 @@ If you use this work in your research, please cite:
   school = {University of Klagenfurt}
 }
 ```
-
----
-
-## Acknowledgments
-
-This work was conducted at the **University of Klagenfurt** with support from the **Autonomous Systems and Robotics** program. Special thanks to the ENTSO-E and Open-Meteo communities for providing open data.
-
 ---
 
 ## Support & Issues
-
-For bugs, questions, or feature requests, please open a [GitHub Issue](https://github.com/cHaMiL8020/thesis-grid-anomaly/issues).
