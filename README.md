@@ -212,7 +212,7 @@ This project is licensed under the **MIT License** – see the [LICENSE](LICENSE
 Master's Candidate – Autonomous Systems & Robotics  
 University of Klagenfurt, Austria
 
-**Contact:** cHaMiL8020@example.com  
+**Contact:** chamilabeysekara@gmail.com  
 **GitHub:** [cHaMiL8020](https://github.com/cHaMiL8020)
 
 ---
