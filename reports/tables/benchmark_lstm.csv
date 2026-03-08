@@ -1,0 +1,2 @@
+model,train_time_sec,inf_latency_ms,rmse_solar,rmse_wind,rmse_load,rmse_price,parameters,lookback_hours
+LSTM (Baseline-Sequential),430.0849494934082,0.3284077110029102,0.085670196,0.22625673,6266.1333,252.33528,79364,24

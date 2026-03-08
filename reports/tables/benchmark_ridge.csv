@@ -1,0 +1,2 @@
+model,train_time_sec,inf_latency_ms,rmse_solar,rmse_wind,rmse_load,rmse_price,parameters
+Ridge (Linear Baseline),0.1481916904449463,0.05290637398138642,0.08490985984295243,0.05852270782012289,1.3016278377226649,0.023543240323530768,452

@@ -1,0 +1,15 @@
+=== THESIS HARDWARE & SYSTEM REPORT ===
+Architecture: x86_64
+OS: Linux 6.8.0-1030-azure
+Processor: x86_64
+Physical Cores: 1
+Total Logical Cores: 2
+Total RAM: 7.76 GB
+Python Version: 3.12.1
+PyTorch Version: 2.7.1+cpu
+
+=== PERFORMANCE SUMMARY ===
+               Model       RMSE Lat(ms/sample) Avg_CPU(%) Inc_RAM(MB) Params
+    Ridge (Baseline)   0.652959        0.00048      100.0       12.00    N/A
+dCeNN-ELM (Proposed) 972.710574        0.00134      100.0       15.25  8,016
+    LSTM (Benchmark) 640.859594        0.05466       69.1       58.37 79,364
