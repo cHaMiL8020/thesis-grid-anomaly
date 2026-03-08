@@ -13,7 +13,7 @@ REP=reports
 # CHANGE: Moved 'asp' before 'finance' to ensure reasoning refines anomalies 
 # before they are used for financial backtesting. 
 all: holidays preprocess split train thresholds detect asp finance eval edge benchmark
-plot: event_table plot_event_table_all  visualize  veto_plot
+plot: event_table plot_event_table_all  visualize  veto_plot  boundary_plot  utility_compare
 # -------------------------------
 #  Phase 1: Learning pipeline
 # -------------------------------
@@ -88,6 +88,13 @@ visualize:
 
 veto_plot:
 > $(PY) $(SRC)/21_plot_veto_analysis.py
+
+boundary_plot:
+> $(PY) $(SRC)/22_plot_decision_boundaries.py
+
+
+utility_compare:
+> $(PY) $(SRC)/23_plot_utility_comparison.py
 
 # -------------------------------
 #  Cleanup
