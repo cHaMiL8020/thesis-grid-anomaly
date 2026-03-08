@@ -1,84 +1,90 @@
 % 07_asp_rules.lp
 %
-% Facts expected per hour T:
-%
-%   hour(T).
-%   pred(solar_elevation, E, T).      % synthetic: >0 day, <0 night
-%   pred(cf_solar,        V, T).      % capacity factor for solar (predicted or true)
-%   pred(cf_wind,         C, T).      % capacity factor for wind (predicted or true)
-%   pred(load_mw,         L, T).      % realized load [MW]
-%   pred(load_ref,        R, T).      % reference/expected load [MW]
-%   pred(dload_pred,      D, T).      % predicted load ramp [MW]
-%   pred(wind_speed_100m, Vw, T).     % wind speed at 100m [m/s]
-%
-%   anom(Name, T).                    % model says anomaly for target Name at time T
-%   bucket(holiday, H, T).            % H = 0 or 1: is public holiday
-%
-% Optionally:
-%   resid(Name, Abs, T).              % absolute residual (not used in rules yet)
-%   thr(Name, Thresh).                % thresholds (not used yet)
-%
-% Target names (Name) are lowercase atoms:
-%   cf_solar, cf_wind, load_mw, price
-%
-% Output:
-%   final(Name, T).                   % rule-consistent anomaly
-
 % =========================================================
-% Utility predicates
+% 07_asp_rules.lp - Neuro-Symbolic Refinement Logic
 % =========================================================
 
-% abs_val(D, A): absolute value helper
+% --- Utility: Absolute Value ---
 abs_val(D, A) :- D >= 0, A = D.
 abs_val(D, A) :- D <  0, A = -D.
 
 % =========================================================
-% Night PV rule
+% 1. Physical Plausibility Guards (Veto Conditions)
 % =========================================================
-% If sun is below the horizon, we consider it "night".
-night(T) :-
-    pred(solar_elevation, E, T),
-    E < 0.
 
-% If it is daytime and CF_Solar is near zero, flag this as suspicious.
-flag(solar_day_violation, T) :-
-    not night(T),
-    pred(cf_solar, V, T),
-    V < 0.02.
+% Night PV Rule: Solar anomalies are invalid if radiation is zero or negative.
+% Factored from: pred(shortwave_radiation, R, T)
+night(T) :- 
+    pred(shortwave_radiation, R, T), 
+    R <= 0.
 
-% =========================================================
-% Wind zero-wind guard
-% =========================================================
-% If 100m wind speed is very low but CF_Wind is high, flag as implausible.
-flag(wind_implausible, T) :-
-    pred(wind_speed_100m, V, T), V < 0.5,
-    pred(cf_wind,         C, T), C > 0.2.
+invalid_solar(T) :- 
+    anomaly("cf_solar", T), 
+    night(T).
 
-% =========================================================
-% Load ramp guard
-% =========================================================
-% Large predicted ramp: |ΔLoad| > 2000 MW (tunable).
+% Wind Guard: Flag as implausible if wind speed is near zero but anomaly is high.
+% Factored from: pred(wind_speed_100m, V, T)
+invalid_wind(T) :-
+    anomaly("cf_wind", T),
+    pred(wind_speed_100m, V, T), 
+    V < 1.
+
+% Load Ramp Guard: Large sudden jumps are often sensor errors rather than grid events.
+% Threshold set to 2000 MW based on Austrian grid capacity.
 ramp_violation(T) :-
     pred(dload_pred, D, T),
     abs_val(D, A),
     A > 2000.
 
 % =========================================================
-% Holiday low-load rule
+% 2. Market & Calendar Logic
 % =========================================================
-% On public holidays, low load vs. reference is OK (we relax anomalies).
-holiday_lowload_ok(T) :-
-    bucket(holiday, 1, T),
-    pred(load_mw,  L, T),
+
+% Holiday Exception: Low load is expected on public holidays.
+% Relax anomalies if load is significantly lower than the reference median.
+holiday_exception(T) :-
+    anomaly("load_mw", T),
+    holiday(T),
+    pred(load_mw, L, T),
     pred(load_ref, R, T),
-    L < 0.7 * R.
+    L < R.
+
+% Co-Anomaly Confirmation: Price spikes are highly credible if they coincide with Load spikes.
+confirmed_economic_event(T) :-
+    anomaly("price", T),
+    anomaly("load_mw", T).
 
 % =========================================================
-% Refined anomaly logic
+% 3. Final Refinement (The "Neuro-Symbolic Fusion")
 % =========================================================
 
-% "Keep" anomaly if model flags anomaly and any plausibility guard fires.
-keep(Name, T) :-
-    anom(Name, T),
-    (   flag(solar_day_violation, T)
-    ;   flag(wind_i_
+% An anomaly is "valid" if it is suggested by the Neural layer AND 
+% passes all Symbolic plausibility checks.
+valid_anomaly(Name, T) :-
+    anomaly(Name, T),
+    not invalid_solar(T),
+    not invalid_wind(T),
+    not holiday_exception(T),
+    not ramp_violation(T).
+
+% Priority Rule: Co-anomalies are valid even if they might otherwise be flagged.
+valid_anomaly("price", T) :-
+    confirmed_economic_event(T).
+
+% =========================================================
+% 4. Explainable AI (XAI) Output
+% =========================================================
+
+% Define a veto for the visualization script to track "The Why"
+vetoed(Name, T) :- 
+    anomaly(Name, T), 
+    not valid_anomaly(Name, T).
+
+% Specific veto reasons for diagnostic reporting
+veto_reason(T, "Night-time Solar Noise") :- invalid_solar(T).
+veto_reason(T, "Low Wind Plausibility") :- invalid_wind(T).
+veto_reason(T, "Holiday Pattern")        :- holiday_exception(T).
+veto_reason(T, "Physical Ramp Limit")    :- ramp_violation(T).
+
+#show valid_anomaly/2.
+#show vetoed/2.

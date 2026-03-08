@@ -2,9 +2,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-import torch
-import yaml
-import importlib.util
 
 # Academic Plotting Configuration
 plt.style.use('seaborn-v0_8-paper')
@@ -20,13 +17,25 @@ def plot_all_signals_comparison():
     """Generates comparison plots for each target signal during detected events."""
     os.makedirs(OUT_DIR, exist_ok=True)
 
-    # 1. Load Data (Corrected read_csv call)
+    # 1. Load Data
+    if not os.path.exists(ANOM_RAW) or not os.path.exists(ANOM_REF):
+        print(f"[ERROR] Required tables not found. Run detection and ASP steps first.")
+        return
+
+    # Load raw data and ensure index is UTC datetime
     df_raw = pd.read_csv(ANOM_RAW, index_col=0, parse_dates=True)
+    if df_raw.index.tz is None:
+        df_raw.index = df_raw.index.tz_localize('UTC')
+
+    # Load refined data and ensure Time is UTC datetime
     df_ref = pd.read_csv(ANOM_REF, parse_dates=["Time (UTC)"])
+    df_ref["Time (UTC)"] = pd.to_datetime(df_ref["Time (UTC)"], utc=True)
+    
     events = pd.read_csv(EVENTS_CSV)
     
-    # Target Mapping
-    signals = ["CF_Solar", "CF_Wind", "Actual_Load_MW", "Price_EUR_MWh"]
+    # Corrected Signal Mapping to match your pipeline's CSV headers
+    # These names must match the columns in anomalies_2022.csv (e.g. Load_MW_true)
+    signals = ["CF_Solar", "CF_Wind", "Load_MW", "Price"]
     
     # 2. Iterate through top events for each signal
     for signal in signals:
@@ -38,8 +47,9 @@ def plot_all_signals_comparison():
             continue
 
         for i, (_, event) in enumerate(sig_events.iterrows()):
-            start = pd.to_datetime(event["start_ts"]) - pd.Timedelta(hours=6)
-            end = pd.to_datetime(event["end_ts"]) + pd.Timedelta(hours=6)
+            # Define window with 6-hour padding
+            start = pd.to_datetime(event["start_ts"], utc=True) - pd.Timedelta(hours=6)
+            end = pd.to_datetime(event["end_ts"], utc=True) + pd.Timedelta(hours=6)
             
             # Slice the data for the window
             window = df_raw.loc[start:end]
@@ -49,11 +59,10 @@ def plot_all_signals_comparison():
                                           gridspec_kw={'height_ratios': [3, 1]})
 
             # --- Panel 1: Prediction Comparison ---
-            # Note: Assuming benchmarks are stored in df_raw from step 15
             ax1.plot(window.index, window[f"{signal}_true"], 'k-', label="Actual Data", alpha=0.9)
             ax1.plot(window.index, window[f"{signal}_pred"], 'g--', label="Proposed (dCeNN-ELM)")
             
-            # If benchmark columns exist (from 15_run_benchmarks), plot them
+            # Plot benchmarks if they exist (LSTM/Ridge)
             for b_mark in ['LSTM', 'Ridge']:
                 col = f"{signal}_{b_mark}_pred"
                 if col in window.columns:
@@ -65,13 +74,24 @@ def plot_all_signals_comparison():
             ax1.grid(True, alpha=0.3)
 
             # --- Panel 2: Neuro-Symbolic Flag Contrast ---
-            # Raw ML Anomaly Flag
-            ax2.fill_between(window.index, 0, window[f"{signal}_anom"], color='orange', alpha=0.3, label="Neural Flag")
+            # A) Raw Neural Anomaly Flag (Orange)
+            anom_col = f"{signal}_anom"
+            if anom_col in window.columns:
+                ax2.fill_between(window.index, 0, window[anom_col], 
+                                 color='orange', alpha=0.3, label="Neural Flag (ML)")
             
-            # ASP Refined Flag (Check if this window has a refined flag)
-            ref_win = df_ref[(df_ref['Time (UTC)'] >= start) & (df_ref['Time (UTC)'] <= end) & (df_ref['target'] == signal.lower())]
+            # B) ASP Refined Flag (Green)
+            # Match lowercase target (e.g. 'load_mw') and filter for confirmed anomalies (is_vetoed == 0)
+            target_slug = signal.lower()
+            ref_win = df_ref[(df_ref['Time (UTC)'] >= start) & 
+                             (df_ref['Time (UTC)'] <= end) & 
+                             (df_ref['target'] == target_slug) &
+                             (df_ref['is_vetoed'] == 0)]
+
             if not ref_win.empty:
-                ax2.fill_between(ref_win['Time (UTC)'], 0, ref_win['final_flag'], color='green', alpha=0.7, label="Symbolic (ASP) Flag")
+                # Plot the confirmed flag (height 1)
+                ax2.fill_between(ref_win['Time (UTC)'], 0, 1, 
+                                 color='green', alpha=0.7, label="Symbolic Flag (ASP Confirmed)")
 
             ax2.set_yticks([0, 1])
             ax2.set_yticklabels(["Normal", "Anomaly"])

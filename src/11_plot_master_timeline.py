@@ -86,18 +86,28 @@ def load_data_repo(args, signal):
     try:
         # 1. Load Raw Anomaly Data (Neural results)
         df_raw = pd.read_csv(args.anomalies_raw, parse_dates=["Time (UTC)"]).set_index("Time (UTC)").sort_index()
+        if df_raw.index.tz is None:
+            df_raw.index = df_raw.index.tz_localize('UTC')
         
         # 2. Load Refined Anomaly Data (Symbolic results)
         df_ref_long = pd.read_csv(args.anomalies_refined, parse_dates=["Time (UTC)"])
-        # Pivot or filter refined data to match signal
-        df_ref = df_ref_long[df_ref_long["target"] == signal].set_index("Time (UTC)").sort_index()
+        df_ref_long["Time (UTC)"] = pd.to_datetime(df_ref_long["Time (UTC)"], utc=True)
+        
+        # Filter for confirmed anomalies ONLY (is_vetoed == 0) and match lowercase target
+        sig_lower = signal.lower()
+        df_ref = df_ref_long[(df_ref_long["target"] == sig_lower) & 
+                             (df_ref_long["is_vetoed"] == 0)].set_index("Time (UTC)").sort_index()
         
         # 3. Load Events (for shading)
         df_events = pd.read_csv(args.events, parse_dates=["start_ts", "end_ts"])
+        df_events["start_ts"] = pd.to_datetime(df_events["start_ts"], utc=True)
+        df_events["end_ts"] = pd.to_datetime(df_events["end_ts"], utc=True)
         df_events = df_events[df_events["signal_id"] == signal]
         
         # 4. Load Finance (Refined Utility)
         df_fin = pd.read_csv(args.finance, parse_dates=["Time (UTC)"]).set_index("Time (UTC)").sort_index()
+        if df_fin.index.tz is None:
+            df_fin.index = df_fin.index.tz_localize('UTC')
         
         # Slicing time window
         start_ts = pd.to_datetime(args.start, utc=True) if args.start else None
@@ -135,21 +145,27 @@ def plot_master_timeline(df_raw, df_ref, df_events, df_fin, signal, args):
     axes[1].legend(loc="upper left")
 
     # Panel 3: NEURO-SYMBOLIC FLAG CONTRAST
-    # This panel shows where the logic "vetoed" the neural network
-    axes[2].fill_between(df_raw.index, 0, df_raw[f"{signal}_anom"], color='orange', alpha=0.3, label="Neural Flag (ML)")
+    # 1. Neural Flag (Orange) - Statistical detection
+    anom_col = f"{signal}_anom"
+    if anom_col in df_raw.columns:
+        axes[2].fill_between(df_raw.index, 0, df_raw[anom_col], color='orange', alpha=0.3, label="Neural Flag (ML)")
     
-    # Match refined flags to the raw timeline
-    refined_mask = df_raw.index.isin(df_ref.index).astype(int)
-    axes[2].fill_between(df_raw.index, 0, refined_mask, color='green', alpha=0.7, label="Symbolic Flag (ASP-Confirmed)")
+    # 2. Symbolic Flag (Green) - ASP Confirmed Only
+    # Use valid_mask to align refined timestamps with the full raw index
+    valid_mask = df_raw.index.isin(df_ref.index).astype(int)
+    axes[2].fill_between(df_raw.index, 0, valid_mask, color='green', alpha=0.7, label="Symbolic Flag (ASP-Confirmed)")
     
     axes[2].set_ylabel("Anomalies")
     axes[2].legend(loc="upper left")
+    axes[2].set_yticks([0, 1])
+    axes[2].set_yticklabels(["Normal", "Anomaly"])
 
     # Panel 4: Financial Impact (Refined)
-    axes[3].plot(df_fin.index, df_fin["utility_cum"], label="Strategy PnL (ASP-Verified)", color="green")
-    axes[3].axhline(0, color="black", linestyle="--", alpha=0.5)
-    axes[3].set_ylabel("Cum. Utility (€)")
-    axes[3].legend(loc="upper left")
+    if "utility_cum" in df_fin.columns:
+        axes[3].plot(df_fin.index, df_fin["utility_cum"], label="Strategy PnL (ASP-Verified)", color="green")
+        axes[3].axhline(0, color="black", linestyle="--", alpha=0.5)
+        axes[3].set_ylabel("Cum. Utility (€)")
+        axes[3].legend(loc="upper left")
 
     # Shade Events by Severity
     sev_colors = {"HIGH": "red", "MEDIUM": "orange", "LOW": "green", "UNKNOWN": "gray"}
