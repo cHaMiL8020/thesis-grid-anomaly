@@ -221,10 +221,18 @@ def make_supervised(
     df: pd.DataFrame,
     lags: List[int],
     rolls: List[int],
+    horizon: int = 1,
 ) -> Tuple[pd.DatetimeIndex, pd.DataFrame, pd.DataFrame]:
     """
-    Same-hour supervised dataset (NO horizon shift).
-    Must match Step 02 logic.
+    Supervised dataset builder.
+
+    - X: base engineered features + lags + rolling means
+    - Y: targets shifted forward by `horizon` for forecasting
+
+    Returns:
+      index: timestamps after dropping NaNs
+      X: feature matrix DataFrame
+      Y: target matrix DataFrame aligned with X
     """
     missing_feats = [c for c in FEATS_BASE if c not in df.columns]
     if missing_feats:
@@ -274,6 +282,9 @@ def make_supervised(
         },
         index=df.index,
     )
+
+    if horizon > 0:
+        Y = Y.shift(-horizon)
 
     XY = X.join(Y).dropna()
     if XY.empty:
@@ -448,10 +459,14 @@ def main() -> None:
 
     engineered_path = base_cfg.get("engineered_csv")
     split_cfg = base_cfg.get("split")
+    horizon = int(base_cfg.get("horizon", 1))
+
     if not isinstance(engineered_path, str):
         _fail("base['engineered_csv'] must be present and a string in base.yaml.")
     if not isinstance(split_cfg, dict):
         _fail("base['split'] must be present and a mapping in base.yaml.")
+    if not isinstance(horizon, int) or horizon < 0:
+        _fail("base['horizon'] must be a non-negative integer in base.yaml.")
 
     # Features config
     try:
@@ -476,6 +491,7 @@ def main() -> None:
     block = int(dcenn_cfg.get("block", 8))
 
     print(f"[INFO] Engineered CSV: {engineered_path}")
+    print(f"[INFO] Horizon (forecast steps): {horizon}")
     print(f"[INFO] bucket_by: {bucket_by}")
     print(f"[INFO] dCeNN config: enc_dim={enc_dim}, steps={steps}, block={block}")
     print(f"[INFO] Lags: {lags}, Rolls: {rolls}")
@@ -489,8 +505,8 @@ def main() -> None:
     tr, te = _split_train_test(df, split_cfg)
 
     # Rebuild supervised sets
-    t_tr, Xtr, Ytr = make_supervised(tr, lags, rolls)
-    t_te, Xte, Yte = make_supervised(te, lags, rolls)
+    t_tr, Xtr, Ytr = make_supervised(tr, lags, rolls, horizon=horizon)
+    t_te, Xte, Yte = make_supervised(te, lags, rolls, horizon=horizon)
 
     print(
         f"[INFO] Supervised shapes: "

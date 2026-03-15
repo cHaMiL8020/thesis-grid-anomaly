@@ -151,11 +151,15 @@ def make_supervised(
     df: pd.DataFrame,
     lags: List[int],
     rolls: List[int],
+    horizon: int = 1,
 ) -> Tuple[pd.DatetimeIndex, pd.DataFrame, pd.DataFrame]:
     """
     Build supervised dataset:
       - X: base engineered features + lags + rolling means
-      - Y: same-hour targets (NO future shift)
+      - Y: horizon-shifted targets (forecasting)
+
+    The returned X and Y are aligned so that each row of X corresponds to the
+    target `horizon` steps ahead in Y.
 
     Returns:
       index: timestamps after dropping NaNs
@@ -214,12 +218,49 @@ def make_supervised(
         index=df.index,
     )
 
+    if horizon > 0:
+        # Shift targets forward to create a true forecasting task.
+        Y = Y.shift(-horizon)
+
     XY = X.join(Y).dropna()
     if XY.empty:
         _fail(
             "make_supervised: resulting supervised DataFrame is empty after "
             "adding lags/rolls and dropping NaNs. Check lags/rolls or date range."
         )
+
+    # Quick sanity check: ensure horizon shift works as expected.
+    # Compare first row prediction target to the original value 'horizon' steps ahead.
+    if horizon > 0 and len(XY) > horizon + 1:
+        try:
+            # Estimate hourly frequency from the first two timestamps in X
+            freq = XY.index[1] - XY.index[0]
+            expected_time = XY.index[0] + horizon * freq
+            if expected_time in df.index:
+                # Validate multiple targets to avoid partial drift.
+                check_cols = {
+                    "Price": "Price_EUR_MWh",
+                    "Load_MW": "Actual_Load_MW",
+                }
+                for y_col, orig_col in check_cols.items():
+                    pred_val = Y.loc[XY.index[0], y_col]
+                    true_val = df.loc[expected_time, orig_col]
+                    assert np.isclose(
+                        pred_val,
+                        true_val,
+                        rtol=1e-6,
+                        atol=1e-6,
+                    ), (
+                        "Horizon shift sanity check failed: "
+                        f"Y at {XY.index[0]} ({y_col}={pred_val}) does not match "
+                        f"true {orig_col} at {expected_time} ({true_val})."
+                    )
+        except Exception as exc:
+            # If the check fails, raise to catch issues early in the pipeline.
+            raise AssertionError(
+                "Horizon-shift sanity check failed; verify the time index frequency "
+                "and that the target shift is applied correctly.",
+            ) from exc
 
     # X must keep only its own columns; Y aligned to XY index
     return XY.index, XY[X.columns], Y.loc[XY.index]
@@ -329,7 +370,7 @@ def main() -> None:
 
     print(f"[INFO] Using engineered CSV: {engineered_path}")
     print(f"[INFO] Target NPZ path: {npz_path}")
-    print(f"[INFO] Horizon (currently unused): {horizon}")
+    print(f"[INFO] Horizon (forecast steps): {horizon}")
     print(f"[INFO] Lags: {lags}")
     print(f"[INFO] Rolls: {rolls}")
     print(f"[INFO] Winsorize columns: {wins_cols}")
@@ -349,9 +390,9 @@ def main() -> None:
     )
 
     # Make supervised datasets
-    t_tr, Xtr, Ytr = make_supervised(tr, lags, rolls)
-    t_va, Xva, Yva = make_supervised(va, lags, rolls)
-    t_te, Xte, Yte = make_supervised(te, lags, rolls)
+    t_tr, Xtr, Ytr = make_supervised(tr, lags, rolls, horizon=horizon)
+    t_va, Xva, Yva = make_supervised(va, lags, rolls, horizon=horizon)
+    t_te, Xte, Yte = make_supervised(te, lags, rolls, horizon=horizon)
 
     print(
         f"[INFO] Supervised shapes: "

@@ -17,14 +17,12 @@ BENCHMARK_PLOT = "reports/figures/benchmark_comparison.png"
 def _run_script(script_path):
     """Executes a benchmark script and returns True if successful."""
     print(f"[RUNNING] {script_path}...")
-    # Ensures a clean environment for each benchmark's timing logic
     result = subprocess.run(["python3", script_path], capture_output=False)
     return result.returncode == 0
 
 def collect_results():
     """Executes all benchmarks and merges results into a single DataFrame."""
     # 1. Execute Benchmarks
-    # We run them fresh to ensure consistent hardware state (CPU temperature/load)
     if not _run_script("src/12_benchmark_dcenn.py"): return None
     if not _run_script("src/13_benchmark_lstm.py"): return None
     if not _run_script("src/14_benchmark_ridge.py"): return None
@@ -35,10 +33,8 @@ def collect_results():
         lstm_df = pd.read_csv("reports/tables/benchmark_lstm.csv")
         ridge_df = pd.read_csv("reports/tables/benchmark_ridge.csv")
         
-        # Merge all baselines with the proposed model
         df = pd.concat([dcenn_df, lstm_df, ridge_df], ignore_index=True)
         
-        # Save Consolidated Table for Thesis Appendix
         os.makedirs("reports/tables", exist_ok=True)
         df.to_csv(BENCHMARK_CSV, index=False)
         return df
@@ -47,38 +43,43 @@ def collect_results():
         return None
 
 def plot_comparison(df):
-    """Generates three-panel comparison plots for the Thesis Results section."""
+    """Generates four-panel comparison plots to handle different unit scales."""
     if df is None: return
 
-    # Standard colors for your thesis defense
-    # Green for proposed, Blue/Orange for baselines
+    # Academic Color Palette
     colors = ['#2ecc71', '#3498db', '#e67e22'] 
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    
+    # Updated to a 2x2 grid to better organize the different units (MW and €)
+    fig, axes = plt.subplots(2, 2, figsize=(16, 12))
     models = df['model']
     
-    # Panel 1: Accuracy (RMSE Price) - Lower is Better
-    axes[0].bar(models, df['rmse_price'], color=colors)
-    axes[0].set_title("Prediction Error (Price RMSE)")
-    axes[0].set_ylabel("Euro/MWh")
-    axes[0].tick_params(axis='x', rotation=15)
+    # --- Panel 1: Load Accuracy (MW) ---
+    axes[0, 0].bar(models, df['rmse_load'], color=colors)
+    axes[0, 0].set_title("Load Prediction Error (RMSE MW)", fontweight='bold')
+    axes[0, 0].set_ylabel("MW")
+    axes[0, 0].grid(axis='y', linestyle='--', alpha=0.7)
 
-    # Panel 2: Training Efficiency (Log Scale)
-    # Essential for showing dCeNN-ELM vs iterative LSTM
-    axes[1].bar(models, df['train_time_sec'], color=colors)
-    axes[1].set_title("Training Wall-Clock Time")
-    axes[1].set_ylabel("Seconds (log)")
-    axes[1].set_yscale('log')
-    axes[1].tick_params(axis='x', rotation=15)
+    # --- Panel 2: Price Accuracy (€/MWh) ---
+    axes[0, 1].bar(models, df['rmse_price'], color=colors)
+    axes[0, 1].set_title("Price Prediction Error (RMSE €/MWh)", fontweight='bold')
+    axes[0, 1].set_ylabel("Euro/MWh")
+    axes[0, 1].grid(axis='y', linestyle='--', alpha=0.7)
 
-    # Panel 3: Edge Inference Latency (Log Scale)
-    # Validates 'Edge Readiness' goal
-    axes[2].bar(models, df['inf_latency_ms'], color=colors)
-    axes[2].set_title("Per-Sample Inference Latency")
-    axes[2].set_ylabel("ms (log)")
-    axes[2].set_yscale('log')
-    axes[2].tick_params(axis='x', rotation=15)
+    # --- Panel 3: Training Efficiency (Wall-Clock) ---
+    axes[1, 0].bar(models, df['train_time_sec'], color=colors)
+    axes[1, 0].set_title("Training Time (Efficiency)", fontweight='bold')
+    axes[1, 0].set_ylabel("Seconds (log)")
+    axes[1, 0].set_yscale('log')
+    axes[1, 0].grid(axis='y', linestyle='--', alpha=0.7)
 
-    plt.tight_layout()
+    # --- Panel 4: Edge Latency (Inference) ---
+    axes[1, 1].bar(models, df['inf_latency_ms'], color=colors)
+    axes[1, 1].set_title("Edge Inference Latency", fontweight='bold')
+    axes[1, 1].set_ylabel("ms (log)")
+    axes[1, 1].set_yscale('log')
+    axes[1, 1].grid(axis='y', linestyle='--', alpha=0.7)
+
+    plt.tight_layout(pad=4.0)
     os.makedirs("reports/figures", exist_ok=True)
     plt.savefig(BENCHMARK_PLOT, dpi=300)
     print(f"[INFO] Comparison visualization saved to {BENCHMARK_PLOT}")
@@ -88,6 +89,6 @@ if __name__ == "__main__":
     df = collect_results()
     if df is not None:
         print("\n[SUMMARY TABLE]")
-        print(df[["model", "rmse_price", "train_time_sec", "inf_latency_ms", "parameters"]])
+        print(df[["model", "rmse_load", "rmse_price", "train_time_sec", "inf_latency_ms"]])
         plot_comparison(df)
         print("\n--- Benchmarking Complete ---")
