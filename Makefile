@@ -1,5 +1,5 @@
 .RECIPEPREFIX := >
-.PHONY: all holidays preprocess split train thresholds detect finance asp eval eval_refined edge event_table clean
+.PHONY: all holidays preprocess split train thresholds detect finance asp eval eval_refined edge event_table additional_visuals report_tables thesis_assets clean
 
 PY=python
 SRC=src
@@ -13,7 +13,7 @@ REP=reports
 # CHANGE: Moved 'asp' before 'finance' to ensure reasoning refines anomalies 
 # before they are used for financial backtesting. 
 all: holidays preprocess split train thresholds detect asp finance eval edge benchmark
-plot: event_table plot_event_table_all  visualize  veto_plot  boundary_plot  utility_compare
+plot: event_table plot_event_table_all visualize veto_plot boundary_plot utility_compare additional_visuals report_tables
 # -------------------------------
 #  Phase 1: Learning pipeline
 # -------------------------------
@@ -95,6 +95,14 @@ boundary_plot:
 
 utility_compare:
 > $(PY) $(SRC)/23_plot_utility_comparison.py
+
+additional_visuals:
+> $(PY) $(SRC)/24_additional_visuals.py
+
+report_tables:
+> $(PY) $(SRC)/25_report_tables.py
+
+thesis_assets: additional_visuals report_tables
 
 # -------------------------------
 #  Cleanup
