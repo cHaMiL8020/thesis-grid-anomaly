@@ -1,0 +1,4 @@
+model,parameters,inf_latency_ms,latency_ms_per_1k_params,avg_rmse,rmse_solar,rmse_wind,rmse_load,rmse_price,note
+LSTM (Baseline-Sequential),79364.0,0.3284077110029102,0.00413799343534739,1629.6951267315,0.085670196,0.22625673,6266.1333,252.33528,
+dCeNN-ELM (Proposed),8016.0,0.0873009269987505,0.01089083420643095,1221.0417227197102,0.102423695503467,0.3235715764663061,4663.765120624554,219.97577498231752,
+Edge Readiness Gain (dCeNN vs LSTM),,,0.3799519262632735,,,,,,Absolute latency speedup: 3.76x (lower is better)
